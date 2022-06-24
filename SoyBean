@@ -1,0 +1,33 @@
+```{r}
+#Input#
+url <- "https://archive.ics.uci.edu/ml/machine-learning-databases/soybean/soybean-small.data"
+library(tidyverse)
+data <- read_csv(file=url, col_names=c("date","plant_stand","precip","temp","hail","crop_hist",
+                                       "area_damaged","severity","seed_tmt","germination","plant_growth",
+                                       "leaves","leafspots_halo","leafspots_marg","leafspots_size","leaf_shread",
+                                       "leaf_malf","leaf_mild","stem","lodging","stem_cankers","canker_lesion",
+                                       "fruiting_bodies","external_decay","mycelium","int_discolor","sclerotia",
+                                       "fruit_pods","fruit_spots","seed","mold_growth","seed_discolor","seed_size",
+                                       "shriveling","roots","classes"))
+data$D1 <- data$classes == "D1"
+data$D2 <- data$classes == "D2"
+data$D3 <- data$classes == "D3"
+data$D4 <- data$classes == "D4"
+soybean <- data
+#Train#
+soybean.train.idx <- sample(x=nrow(soybean),size=nrow(soybean)*0.5)
+soybean.train <- soybean[soybean.train.idx,]
+soybean.valid <- soybean[-soybean.train.idx,]
+library(neuralnet)
+soybean.net <- neuralnet(D1+D2+D3+D4~date+plant_stand+precip+temp+hail+crop_hist+area_damaged+severity+seed_tmt+germination+plant_growth
+                                      +leaves+leafspots_halo+leafspots_marg+leafspots_size+leaf_shread+leaf_malf+leaf_mild+stem+lodging+stem_cankers
+                                      +canker_lesion+fruiting_bodies+external_decay+mycelium+int_discolor+sclerotia+fruit_pods+fruit_spots
+                                      +seed+mold_growth+seed_discolor+seed_size+shriveling+roots,
+                         data=soybean.train,hidden=c(5,5),rep=5,err.fct = "ce",
+                         linear.output = FALSE)
+plot(soybean.net,rep="best")
+soybean.prediction <- neuralnet::compute(soybean.net,soybean.valid)
+idx <- apply(soybean.prediction$net.result,1,which.max)
+predicted <- c("D1","D2","D3","D4")[idx]
+table(predicted,soybean.valid$classes)
+```
