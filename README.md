@@ -1,3 +1,2 @@
-# ANN-With-RStudio
-Breast Cancer --> Multilayer
-Soybean --> Classification
+I hope I could help
+Good Luck
