@@ -1,0 +1,70 @@
+
+```{r}
+##Packages##
+install.packages("neuralnet")
+install.packages("caret")
+install.packages("tidyverse")
+```
+
+```{r}
+##DataSet##
+url <- "https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/breast-cancer-wisconsin.data"
+library(tidyverse)
+data <- read_csv(file=url, col_names=c("ID","clump_thickness","uniformity_cell_size",
+                                       "uniformity_cell_shape","marginal_adhesion",
+                                       "single_epithelial_cell_size","bare_nuclei",
+                                       "bland_chromatin","normal_nucleoli","mitoses","diagnosis"))
+str(data)
+data$bare_nuclei <- as.numeric(data$bare_nuclei)
+df <- data[,-1]
+df <- df[complete.cases(df), ] 
+#0:benign(B), 1:maligant(M)
+df$diagnosis <- ifelse(df$diagnosis==2,0,1)
+
+```
+
+```{r}
+##Normalize##
+df$clump_thickness = (df$clump_thickness - min(df$clump_thickness))/(max(df$clump_thickness)-min(df$clump_thickness))
+df$uniformity_cell_size = (df$uniformity_cell_size - min(df$uniformity_cell_size))/(max(df$uniformity_cell_size)-min(df$uniformity_cell_size))
+df$uniformity_cell_shape = (df$uniformity_cell_shape - min(df$uniformity_cell_shape))/(max(df$uniformity_cell_shape)-min(df$uniformity_cell_shape))
+df$marginal_adhesion = (df$marginal_adhesion - min(df$marginal_adhesion))/(max(df$marginal_adhesion)-min(df$marginal_adhesion))
+df$single_epithelial_cell_size = (df$single_epithelial_cell_size - min(df$single_epithelial_cell_size))/(max(df$single_epithelial_cell_size)-min(df$single_epithelial_cell_size))
+df$bare_nuclei = (df$bare_nuclei - min(df$bare_nuclei))/(max(df$bare_nuclei)-min(df$bare_nuclei))
+df$bland_chromatin = (df$bland_chromatin - min(df$bland_chromatin))/(max(df$bland_chromatin)-min(df$bland_chromatin))
+df$normal_nucleoli = (df$normal_nucleoli - min(df$normal_nucleoli))/(max(df$normal_nucleoli)-min(df$normal_nucleoli))
+df$mitoses = (df$mitoses - min(df$mitoses))/(max(df$mitoses)-min(df$mitoses))
+```
+
+```{r}
+##Train-Test##
+set.seed(222)
+newdata <- sample(2, nrow(df), replace = TRUE, prob = c(0.75, 0.25))
+training <- df[newdata==1,]
+testing <- df[newdata==2,]
+```
+
+```{r}
+##Artifical Neural Network Multi Layer##
+library(neuralnet)
+set.seed(333)
+ann <- neuralnet(diagnosis~., data = training, hidden = c(2,3),
+                 err.fct = "ce", linear.output = FALSE)
+plot(ann)
+```
+
+```{r}
+##Prediction##
+library(caret)
+output <- neuralnet::compute(ann, testing[,-1])
+head(ann$net.result)
+head(training[1,])
+results <- data.frame(DataAsli=testing$diagnosis, Prediksi=output$net.result)
+roundedresult <- sapply(results, round, digits=0)
+prediction <- round(output$net.result, digits = 0)
+actual <- round(testing$diagnosis, digits = 0)
+mtab <- table(actual,prediction)
+mtab
+confusionMatrix(mtab)
+
+```
